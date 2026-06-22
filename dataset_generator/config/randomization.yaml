@@ -1,0 +1,48 @@
+# Faixas de domain randomization.
+
+# Reduz a amplitude em torno do meio de cada faixa (0..1). Valores menores ->
+# poses mais "naturais"; 1.0 = usa o range articular cheio.
+pose_range_scale: 0.6
+
+# Limites articulares do NAO em RADIANOS [min, max].
+# Valores aproximados da documentação do NAO — confira os do seu modelo
+# (rode dump_solid_tree e/ou consulte o Nao.proto da sua versão).
+joint_limits:
+  HeadYaw:        [-2.0857,  2.0857]
+  HeadPitch:      [-0.6720,  0.5149]
+  LShoulderPitch: [-2.0857,  2.0857]
+  LShoulderRoll:  [-0.3142,  1.3265]
+  LElbowYaw:      [-2.0857,  2.0857]
+  LElbowRoll:     [-1.5446, -0.0349]
+  LWristYaw:      [-1.8238,  1.8238]
+  RShoulderPitch: [-2.0857,  2.0857]
+  RShoulderRoll:  [-1.3265,  0.3142]
+  RElbowYaw:      [-2.0857,  2.0857]
+  RElbowRoll:     [ 0.0349,  1.5446]
+  RWristYaw:      [-1.8238,  1.8238]
+  LHipRoll:       [-0.3794,  0.7905]
+  LHipPitch:      [-1.7739,  0.4823]
+  LKneePitch:     [-0.0923,  2.1125]
+  LAnklePitch:    [-1.1895,  0.9227]
+  LAnkleRoll:     [-0.3978,  0.7690]
+  RHipRoll:       [-0.7905,  0.3794]
+  RHipPitch:      [-1.7739,  0.4823]
+  RKneePitch:     [-0.1030,  2.1201]
+  RAnklePitch:    [-1.1864,  0.9320]
+  RAnkleRoll:     [-0.7690,  0.3978]
+
+# Câmera: posição amostrada numa casca esférica ao redor do NAO.
+camera:
+  radius_min: 1.2     # metros
+  radius_max: 2.5
+  azimuth_deg: [0, 360]
+  elevation_deg: [-10, 45]
+  settle_steps: 3     # passos de simulação antes de capturar
+
+# Iluminação (ainda não aplicada no controlador — ver TODO em dataset_generator).
+lighting:
+  intensity: [0.6, 1.4]
+  color_range: [0.85, 1.0]
+
+# Fundos possíveis (texturas/cenas a alternar — ver TODO no controlador).
+backgrounds: []

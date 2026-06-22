@@ -1,0 +1,7 @@
+# Parâmetros da câmera observadora.
+# Observação: no Webots o DISPOSITIVO é a fonte da verdade — a matriz K é
+# construída a partir de camera.getFov(). Estes valores documentam o esperado
+# e devem bater com o nó Camera em worlds/dataset.wbt.
+width: 640
+height: 480
+fov_deg: 60.0   # FOV horizontal (~1.047 rad)

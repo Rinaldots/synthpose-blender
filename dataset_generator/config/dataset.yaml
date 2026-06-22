@@ -1,0 +1,10 @@
+# Parâmetros gerais do dataset.
+num_samples: 3          # total de frames a gerar
+splits:                    # proporção treino/val/teste (somam 1.0)
+  train: 0.8
+  val: 0.1
+  test: 0.1
+output_dir: output         # relativo à raiz do projeto
+image_prefix: nao_         # prefixo dos arquivos de imagem
+image_format: png
+seed: 42                   # semente para reprodutibilidade da amostragem

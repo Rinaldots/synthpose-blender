@@ -1,0 +1,60 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "Nao.proto"
+
+PROTO MyNao [
+  field SFVec3f    translation    0 0 0.334
+  field SFRotation rotation       0 0 1 0
+  field SFString   controller     "<none>"
+  field SFFloat    HeadYaw        0
+  field SFFloat    HeadPitch      0
+  field SFFloat    LShoulderPitch 0
+  field SFFloat    LShoulderRoll  0
+  field SFFloat    LElbowYaw      0
+  field SFFloat    LElbowRoll     0
+  field SFFloat    LWristYaw      0
+  field SFFloat    RShoulderPitch 0
+  field SFFloat    RShoulderRoll  0
+  field SFFloat    RElbowYaw      0
+  field SFFloat    RElbowRoll     0
+  field SFFloat    RWristYaw      0
+  field SFFloat    LHipRoll       0
+  field SFFloat    LHipPitch      0
+  field SFFloat    LKneePitch     0
+  field SFFloat    LAnklePitch    0
+  field SFFloat    LAnkleRoll     0
+  field SFFloat    RHipRoll       0
+  field SFFloat    RHipPitch      0
+  field SFFloat    RKneePitch     0
+  field SFFloat    RAnklePitch    0
+  field SFFloat    RAnkleRoll     0
+]
+{
+  Nao {
+    translation IS translation
+    rotation IS rotation
+    controller IS controller
+    HeadYaw IS HeadYaw
+    HeadPitch IS HeadPitch
+    LShoulderPitch IS LShoulderPitch
+    LShoulderRoll IS LShoulderRoll
+    LElbowYaw IS LElbowYaw
+    LElbowRoll IS LElbowRoll
+    LWristYaw IS LWristYaw
+    RShoulderPitch IS RShoulderPitch
+    RShoulderRoll IS RShoulderRoll
+    RElbowYaw IS RElbowYaw
+    RElbowRoll IS RElbowRoll
+    RWristYaw IS RWristYaw
+    LHipRoll IS LHipRoll
+    LHipPitch IS LHipPitch
+    LKneePitch IS LKneePitch
+    LAnklePitch IS LAnklePitch
+    LAnkleRoll IS LAnkleRoll
+    RHipRoll IS RHipRoll
+    RHipPitch IS RHipPitch
+    RKneePitch IS RKneePitch
+    RAnklePitch IS RAnklePitch
+    RAnkleRoll IS RAnkleRoll
+  }
+}

@@ -1,0 +1,4 @@
+numpy>=1.24
+pyyaml>=6.0
+opencv-python>=4.8
+pycocotools>=2.0.7

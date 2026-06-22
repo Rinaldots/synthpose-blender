@@ -1,0 +1,54 @@
+#VRML_SIM R2025a utf8
+# World de exemplo para geração de dataset COCO-pose.
+#
+# Arquitetura:
+#   - DEF NAO: o robô observado, SEM controlador próprio. As poses são
+#     aplicadas pelo rig via Supervisor (NaoPoser). Mantido na origem para
+#     que o controlador o reancore a cada frame.
+#   - DEF RIG: um Robot com supervisor TRUE que CARREGA a câmera e RODA o
+#     controlador dataset_generator. Ele move a própria câmera (randomização)
+#     e lê as juntas do NAO.
+#
+# A câmera precisa estar no MESMO robô do controlador para que getImage()
+# funcione; por isso ela é filha do RIG, não do NAO.
+
+EXTERNPROTO "../protos/MyNao.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+
+WorldInfo {
+  basicTimeStep 16
+}
+Viewpoint {
+  orientation -0.55 0.55 0.63 2.1
+  position 0 -3.2 1.6
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 4 4
+}
+
+DEF NAO MyNao {
+  translation 0 0 0.333
+  controller "<none>"
+}
+
+DEF RIG Robot {
+  translation 0 -2 1
+  controller "dataset_generator"
+  supervisor TRUE
+  children [
+    DEF CAMERA Camera {
+      name "camera"
+      width 640
+      height 480
+      fieldOfView 1.047
+      # Para oclusão precisa, adicione um RangeFinder análogo e leia a
+      # imagem de profundidade no controlador (ver visibility.occluded_by_depth).
+    }
+  ]
+}
