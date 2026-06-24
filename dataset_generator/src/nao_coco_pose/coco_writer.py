@@ -62,6 +62,22 @@ class CocoDatasetBuilder:
             "categories": self.categories,
         }
 
+    def load_existing(self, path) -> None:
+        """Carrega um JSON COCO existente para continuar a partir dele.
+
+        Os novos samples adicionados via add_sample() receberão IDs únicos
+        (maiores que os já existentes no arquivo).
+        """
+        p = Path(path)
+        if not p.exists():
+            return
+        with open(p, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        self.images      = data.get("images", [])
+        self.annotations = data.get("annotations", [])
+        self._img_id = max((img["id"] for img in self.images),      default=0)
+        self._ann_id = max((ann["id"] for ann in self.annotations),  default=0)
+
     def save(self, path) -> None:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)

@@ -45,5 +45,21 @@ lighting:
   intensity: [0.6, 1.4]
   color_range: [0.85, 1.0]
 
-# Fundos possíveis (texturas/cenas a alternar — ver TODO no controlador).
-backgrounds: []
+# Fundos: lista de caminhos relativos à raiz do projeto (HDRI, JPG, PNG).
+# Quando vazio, usa céu sólido aleatório (padrão atual).
+# Exemplo:
+#   backgrounds:
+#     - assets/backgrounds/outdoor_sunny.hdr
+#     - assets/backgrounds/indoor_office.jpg
+backgrounds:
+  - assets/backgrounds/blue_photo_studio_1k.hdr
+  - assets/backgrounds/braustuble_alley_1k.hdr
+  - assets/backgrounds/cayley_interior_1k.hdr
+  - assets/backgrounds/christmas_photo_studio_01_1k.hdr
+  - assets/backgrounds/christmas_photo_studio_05_1k.hdr
+  - assets/backgrounds/cobblestone_parish_road_1k.hdr
+  - assets/backgrounds/cobblestone_street_night_1k.hdr
+  - assets/backgrounds/hansaplatz_1k.hdr
+  - assets/backgrounds/pav_studio_03_1k.hdr
+  - assets/backgrounds/studio_small_04_1k.hdr
+  - assets/backgrounds/suburban_garden_1k.hdr

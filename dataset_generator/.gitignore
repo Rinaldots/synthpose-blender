@@ -3,4 +3,6 @@ __pycache__/
 .venv/
 *.egg-info/
 output/
+checkpoints/
+assets/scenes/
 *.zip
