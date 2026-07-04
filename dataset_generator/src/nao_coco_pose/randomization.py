@@ -27,7 +27,7 @@ class DomainRandomizer:
         self.cfg = cfg   # RandomizationConfig
 
     # ----- pose das juntas -----
-    def _sample_joint(self, joint: str, lo: float, hi: float, override=None) -> float:
+    def _sample_joint(self, lo: float, hi: float, override=None) -> float:
         """Amostra um ângulo: range cheio da categoria (override) ou range global
         reduzido por pose_range_scale em torno do meio."""
         if override is not None:
@@ -44,7 +44,7 @@ class DomainRandomizer:
         o que tende a gerar poses mais naturais do que uniforme no range cheio.
         """
         return {
-            joint: self._sample_joint(joint, lo, hi)
+            joint: self._sample_joint(lo, hi)
             for joint, (lo, hi) in self.cfg.joint_limits.items()
         }
 
@@ -67,7 +67,7 @@ class DomainRandomizer:
 
         overrides = spec.get("joint_overrides") or {}
         joints = {
-            joint: self._sample_joint(joint, lo, hi, overrides.get(joint))
+            joint: self._sample_joint(lo, hi, overrides.get(joint))
             for joint, (lo, hi) in self.cfg.joint_limits.items()
         }
 
