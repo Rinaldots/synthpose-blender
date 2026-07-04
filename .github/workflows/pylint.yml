@@ -1,23 +1,27 @@
 name: Pylint
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9", "3.10"]
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pylint
-    - name: Analysing the code with pylint
-      run: |
-        pylint $(git ls-files '*.py')
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint numpy pyyaml opencv-python pycocotools
+      - name: Analysing the code with pylint
+        working-directory: dataset_generator
+        run: |
+          # bpy/mathutils/torch só existem dentro do Blender/no runtime de treino
+          # (não instalados no CI) -> import-error é esperado e suprimido.
+          # PYTHONPATH=src resolve o pacote nao_coco_pose; pyproject.toml fornece
+          # a config de pylint (good-names, cv2 generated-members).
+          PYTHONPATH=src pylint $(git ls-files '*.py') \
+            --disable=import-error \
+            --fail-under=8.0
