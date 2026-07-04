@@ -207,11 +207,29 @@ def _apply_lighting(p: dict):
     c = p["color"]
     sun_obj.data.color  = (c[0], c[1], c[2])
 
-def _place_camera(cam_pos, aim_pt):
-    cam_obj.location = mathutils.Vector(cam_pos)
-    cam_obj.rotation_euler = (
-        mathutils.Vector(aim_pt) - mathutils.Vector(cam_pos)
-    ).to_track_quat("-Z", "Y").to_euler()
+def _place_camera(cam_pos, target, bbox_radius, dx, dy, roll):
+    """Olha para `target` com descentralização (dx,dy = fração da margem livre no
+    plano da imagem) e roll (ângulo de captura). A margem vem do bbox do robô e do
+    FOV, garantindo que o robô (esfera envolvente) não cruze a borda do quadro.
+    """
+    cam_pos = mathutils.Vector(cam_pos)
+    target  = mathutils.Vector(target)
+    view = target - cam_pos
+    d = view.length
+    view.normalize()
+    up_w = mathutils.Vector((0.0, 0.0, 1.0))
+    right = view.cross(up_w)
+    if right.length < 1e-6:
+        right = mathutils.Vector((1.0, 0.0, 0.0))
+    right.normalize()
+    up = right.cross(view).normalized()
+    v_half = math.atan((0.5 * cam_data.sensor_width * H / W) / cam_data.lens)
+    margin = max(0.0, d * math.tan(v_half) - bbox_radius)
+    aim = target + right * (dx * margin) + up * (dy * margin)
+    q = (aim - cam_pos).to_track_quat("-Z", "Y")
+    q = q @ mathutils.Quaternion((0.0, 0.0, 1.0), roll)   # roll no eixo de visão
+    cam_obj.location = cam_pos
+    cam_obj.rotation_euler = q.to_euler()
 
 def _apply_dof(cam_pos, target):
     focus_dist = float(np.linalg.norm(np.array(cam_pos) - np.asarray(target)))
@@ -256,8 +274,9 @@ for i in range(NUM_SAMPLES):
     cam_target, bbox_r = _ground_and_target()
     color = tex_rand.randomize(rng)
 
-    cam_pos, aim_pt = rand.sample_camera_pose(cam_target, _fit_distance(bbox_r))
-    _place_camera(cam_pos, aim_pt)
+    cp = rand.sample_camera_pose(cam_target, _fit_distance(bbox_r))
+    cam_pos = cp.pos
+    _place_camera(cam_pos, cam_target, bbox_r, cp.dx, cp.dy, cp.roll)
     _apply_dof(cam_pos, cam_target)
     _apply_lighting(rand.sample_lighting())
 

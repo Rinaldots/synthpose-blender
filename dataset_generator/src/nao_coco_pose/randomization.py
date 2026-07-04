@@ -14,6 +14,12 @@ import numpy as np
 # inclinação do tronco (base_link) em graus (pitch em torno de Y, roll em torno de X).
 RobotPose = namedtuple("RobotPose", ["category", "joints", "tilt_deg"])
 
+# Resultado de sample_camera_pose: posição da câmera, descentralização no plano da
+# imagem (dx, dy como fração da margem disponível, em [-1,1]) e roll da câmera (rad,
+# ângulo de captura / horizonte inclinado). O controlador converte dx/dy em offset
+# de mira usando a geometria (bbox do robô + FOV) para o robô nunca sair do quadro.
+CamPose = namedtuple("CamPose", ["pos", "dx", "dy", "roll"])
+
 
 class DomainRandomizer:
     def __init__(self, rng: np.random.Generator, cfg):
@@ -72,15 +78,17 @@ class DomainRandomizer:
 
     # ----- câmera (esférica, olhando para o alvo) -----
     def sample_camera_pose(self, target, fit_distance):
-        """Amostra posição da câmera numa casca esférica ao redor do alvo.
+        """Amostra posição da câmera numa casca esférica ao redor do alvo, mais
+        a descentralização no plano da imagem e o roll (ângulo de captura).
 
         `fit_distance` é a distância em que o robô "encaixa" no quadro (calculada
-        pelo bbox do robô e o FOV, no controlador). O raio final = fit_distance *
-        fator sorteado em `distance_factor`, então o robô ocupa uma fração ~constante
-        do quadro em qualquer pose.
+        pelo bbox do robô e o FOV, no controlador). O raio = fit_distance * fator
+        sorteado em `distance_factor` (>=1 mantém o robô no quadro; fatores maiores
+        = robô menor / mais distância).
 
-        Returns (pos, aim_point): pos é a posição da câmera; aim_point é o ponto de
-        mira (centro do robô, com offset vertical opcional).
+        Returns CamPose(pos, dx, dy, roll): dx/dy em [-1,1] são a fração da margem
+        disponível para descentralizar o robô (o controlador garante que ele não
+        saia do quadro); roll (rad) inclina a imagem.
         """
         c = self.cfg.camera
         fmin, fmax = c.get("distance_factor", (1.2, 2.0))
@@ -91,8 +99,15 @@ class DomainRandomizer:
         offset = r * np.array([np.cos(el) * np.cos(az),
                                np.cos(el) * np.sin(az),
                                np.sin(el)])
-        aim_point = target + np.array([0.0, 0.0, float(c.get("target_offset_z", 0.0))])
-        return target + offset, aim_point
+        # Descentralização: vetor num disco de raio `decenter` (<=1), escalado
+        # depois pela margem geométrica no controlador.
+        dc = float(c.get("decenter", 0.0))
+        dx, dy = self.rng.uniform(-1.0, 1.0, size=2)
+        n = float(np.hypot(dx, dy))
+        if n > 1.0:
+            dx, dy = dx / n, dy / n
+        roll = float(self.rng.uniform(*np.deg2rad(c.get("roll_deg", (0.0, 0.0)))))
+        return CamPose(target + offset, float(dx) * dc, float(dy) * dc, roll)
 
     # ----- ambiente -----
     def sample_lighting(self) -> dict:
