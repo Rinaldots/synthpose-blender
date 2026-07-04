@@ -11,3 +11,16 @@ dependencies = ["numpy>=1.24", "pyyaml>=6.0", "opencv-python>=4.8", "pycocotools
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pylint.main]
+# cv2 é extensão C: o pylint não introspecta seus membros (E1101 falso-positivo).
+extension-pkg-allow-list = ["cv2"]
+
+[tool.pylint.typecheck]
+# cv2 carrega membros dinamicamente; suprime no-member falso-positivo.
+generated-members = ["cv2.*"]
+
+[tool.pylint.basic]
+# Nomes de 1-2 letras convencionais no domínio: matriz intrínseca K, rotação R,
+# escala S, dimensões de imagem/heatmap W/H, coordenadas e índices.
+good-names = ["K", "R", "S", "W", "H", "B", "i", "j", "k", "n", "r", "x", "y", "z", "u", "v", "d"]

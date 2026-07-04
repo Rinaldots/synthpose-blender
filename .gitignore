@@ -101,6 +101,8 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
+# Exceção: meshes vendorizados do NAO (fonte para reconstruir o nao_blender.blend)
+!dataset_generator/blender/meshes_V40_obj/*.obj
 *.idb
 *.iobj
 *.pch
