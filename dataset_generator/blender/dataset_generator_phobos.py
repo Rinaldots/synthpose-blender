@@ -95,7 +95,7 @@ rand = DomainRandomizer(rng, rcfg)
 
 print(f"[GEN-PHOBOS] start={START_INDEX}  num={NUM_SAMPLES}  seed={dcfg.seed + START_INDEX}")
 
-W, H        = 640, 480
+W, H        = 640, 640
 SENSOR_W_MM = 36.0
 LENS_MM     = (SENSOR_W_MM / 2.0) / math.tan(math.radians(60.0 / 2.0))
 OUT_ROOT    = Path(_args.out) if _args.out else PROJ_ROOT / dcfg.output_dir
