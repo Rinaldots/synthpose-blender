@@ -22,6 +22,9 @@ projeta 3D→2D → calcula visibilidade/bbox → grava anotação COCO.
   `python scripts/monitor.py --out output --total N --world-size W --rank R [--interval S]`
   - No notebook, `monitor.run_with_monitor(cmd, out_dir, num)` roda o monitor em paralelo
     com a geração. Sem deps novas — lê `nvidia-smi` e conta PNGs em `<out>/images/**`.
+  - Backup incremental do dataset pro PC: `--backup-remote gdrive:pasta [--backup-every 100]`
+    faz `rclone copy` (só arquivos novos) a cada N imagens. rclone precisa estar configurado
+    (Google Drive etc.); single-flight e não-bloqueante (não trava o monitor).
 - Overlay de validação (5 poses, projeta os keypoints sobre o render):
   `blender --background nao_blender.blend --python overlay_phobos.py`
 - Validar JSON gerado:

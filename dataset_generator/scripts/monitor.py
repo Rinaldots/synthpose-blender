@@ -159,31 +159,77 @@ def publish_ntfy(topic: str, payload: dict, server: str = NTFY_DEFAULT_SERVER) -
 
 
 # ---------------------------------------------------------------------------
+# Backup incremental (Kaggle -> nuvem via rclone)
+# ---------------------------------------------------------------------------
+_backup_lock = threading.Lock()
+
+
+def _run_backup(out_dir: Path, remote: str) -> None:
+    """Dispara `rclone copy out_dir remote` em background (não bloqueia o monitor).
+
+    Single-flight: se um backup anterior ainda roda, pula este ciclo (rclone copy
+    é incremental — sobe só arquivos novos — então o próximo pega o atraso).
+    """
+    if not _backup_lock.acquire(blocking=False):
+        return
+    def _job():
+        try:
+            exe = shutil.which("rclone")
+            if not exe:
+                print("[monitor] rclone não encontrado; backup pulado", flush=True)
+                return
+            r = subprocess.run([exe, "copy", str(out_dir), remote,
+                                "--transfers=8", "--checkers=8", "--exclude=*.log"],
+                               capture_output=True, text=True, timeout=900)
+            msg = "ok" if r.returncode == 0 else f"FALHOU: {r.stderr.strip()[:200]}"
+            print(f"[monitor] backup -> {remote}: {msg}", flush=True)
+        except Exception as e:                    # noqa: BLE001 — backup nunca derruba a geração
+            print(f"[monitor] backup erro: {e}", flush=True)
+        finally:
+            _backup_lock.release()
+    threading.Thread(target=_job, daemon=True).start()
+
+
+# ---------------------------------------------------------------------------
 # Loop de monitoramento (dentro da máquina que gera)
 # ---------------------------------------------------------------------------
 def watch(out_dir: Path, num: int | None, interval: float = 5.0,
           stop: threading.Event | None = None, image_format: str = "png",
           rank: int | None = None, ntfy_topic: str | None = None,
-          ntfy_server: str = NTFY_DEFAULT_SERVER) -> None:
+          ntfy_server: str = NTFY_DEFAULT_SERVER,
+          backup_remote: str | None = None, backup_every: int = 100) -> None:
     """Imprime (e opcionalmente publica no ntfy) um snapshot a cada `interval` s.
+
+    Se `backup_remote` for dado, faz `rclone copy` do out_dir a cada `backup_every`
+    imagens novas (backup incremental para a nuvem).
 
     Para quando `stop` é setado (modo embutido) ou o alvo `num` é atingido.
     """
     out_dir = Path(out_dir)
     t0 = time.time()
     done0 = count_done(out_dir, image_format)
+    step = max(int(backup_every), 1)
+    last_backup = done0 // step
     dest = f"  ->ntfy:{ntfy_topic}" if ntfy_topic else ""
+    dest += f"  ->backup:{backup_remote}(/{step})" if backup_remote else ""
     print(f"[monitor] observando {out_dir}  alvo={num or '?'}  intervalo={interval}s{dest}", flush=True)
     while True:
         d = snapshot_dict(out_dir, num, t0, done0, rank=rank, image_format=image_format)
         print(_format_line(d), flush=True)
         if ntfy_topic:
             publish_ntfy(ntfy_topic, d, ntfy_server)
+        if backup_remote and d["done"] // step > last_backup:
+            last_backup = d["done"] // step
+            _run_backup(out_dir, backup_remote)
         if num and d["done"] >= num:
             print("[monitor] alvo atingido.", flush=True)
+            if backup_remote:
+                _run_backup(out_dir, backup_remote)      # backup final
             return
         if stop is not None and stop.wait(interval):
             print("[monitor] encerrado.", flush=True)
+            if backup_remote:
+                _run_backup(out_dir, backup_remote)      # backup final
             return
         if stop is None:
             time.sleep(interval)
@@ -204,17 +250,20 @@ def _shard_num(total: int | None, world_size: int | None, rank: int | None,
 def run_with_monitor(cmd: list[str], out_dir: str | Path, num: int | None = None,
                      cwd: str | Path | None = None, interval: float = 5.0,
                      rank: int | None = None, ntfy_topic: str | None = None,
-                     ntfy_server: str = NTFY_DEFAULT_SERVER) -> int:
+                     ntfy_server: str = NTFY_DEFAULT_SERVER,
+                     backup_remote: str | None = None, backup_every: int = 100) -> int:
     """Roda `cmd` (a geração) e, em paralelo, um monitor até o processo terminar.
 
     Se `ntfy_topic` for dado, cada snapshot também é publicado no tópico (para o
-    painel agregador rodando no seu PC). Retorna o returncode do processo.
+    painel agregador rodando no seu PC). Se `backup_remote` for dado, faz backup
+    incremental (rclone) a cada `backup_every` imagens. Retorna o returncode.
     """
     stop = threading.Event()
     th = threading.Thread(
         target=watch,
         kwargs=dict(out_dir=Path(out_dir), num=num, interval=interval, stop=stop,
-                    rank=rank, ntfy_topic=ntfy_topic, ntfy_server=ntfy_server),
+                    rank=rank, ntfy_topic=ntfy_topic, ntfy_server=ntfy_server,
+                    backup_remote=backup_remote, backup_every=backup_every),
         daemon=True,
     )
     th.start()
@@ -320,6 +369,11 @@ def main() -> None:
                     help="Tópico ntfy para ASSINAR e agregar as máquinas (modo PC).")
     ap.add_argument("--ntfy-server", type=str, default=NTFY_DEFAULT_SERVER,
                     help=f"Servidor ntfy (default: {NTFY_DEFAULT_SERVER}).")
+    # Backup incremental via rclone.
+    ap.add_argument("--backup-remote", type=str, default=None,
+                    help="Destino rclone (ex.: 'gdrive:synthpose-backup') p/ backup incremental.")
+    ap.add_argument("--backup-every", type=int, default=100,
+                    help="Faz backup a cada N imagens novas (default: 100).")
     args = ap.parse_args()
 
     if args.subscribe:
@@ -339,7 +393,8 @@ def main() -> None:
         return
     try:
         watch(args.out, num, args.interval, rank=args.rank,
-              ntfy_topic=args.ntfy, ntfy_server=args.ntfy_server)
+              ntfy_topic=args.ntfy, ntfy_server=args.ntfy_server,
+              backup_remote=args.backup_remote, backup_every=args.backup_every)
     except KeyboardInterrupt:
         print("\n[monitor] interrompido pelo usuário.")
 
