@@ -16,6 +16,7 @@ Saída (idêntica ao pipeline original):
 import sys
 import math
 import numpy as np
+import time
 from pathlib import Path
 
 import bpy
@@ -302,7 +303,15 @@ def _flush(splits) -> None:
 
 dirty: set[str] = set()
 
+import time
+time_setup = 0.0
+time_viewlayer = 0.0
+time_render = 0.0
+time_post = 0.0
+time_total = 0.0
+
 for i in range(NUM_SAMPLES):
+    t_start = time.time()
     frame_idx = START_INDEX + i
     split   = next(s for s, idx_set in split_map.items() if i in idx_set)
     img_dir = OUT_ROOT / "images" / split
@@ -318,6 +327,7 @@ for i in range(NUM_SAMPLES):
     if _args.resume and img_path.exists():
         continue
 
+    t0 = time.time()
     rp = rand.sample_robot_pose()
     poser.apply_pose(rp.joints)
     _apply_base_tilt(*rp.tilt_deg)
@@ -334,11 +344,14 @@ for i in range(NUM_SAMPLES):
     bg = rand.sample_background()
     if bg is not None:
         scene_rand.set_background(str(PROJ_ROOT / bg))
+    t1 = time.time()
 
     bpy.context.view_layer.update()
+    t2 = time.time()
 
     sc.render.filepath = str(img_path)
     bpy.ops.render.render(write_still=True)
+    t3 = time.time()
 
     K      = build_K(cam_data, W, H)
     C2W    = get_c2w(cam_obj)
@@ -366,7 +379,22 @@ for i in range(NUM_SAMPLES):
 
     n_vis = sum(f == V_VISIBLE  for f in flags)
     n_occ = sum(f == V_OCCLUDED for f in flags)
+    t4 = time.time()
+
+    dt_setup = t1 - t0
+    dt_viewlayer = t2 - t1
+    dt_render = t3 - t2
+    dt_post = t4 - t3
+    dt_total = t4 - t_start
+
+    time_setup += dt_setup
+    time_viewlayer += dt_viewlayer
+    time_render += dt_render
+    time_post += dt_post
+    time_total += dt_total
+
     print(f"[GEN-PHOBOS] {i+1}/{NUM_SAMPLES}  #{frame_idx}  {split}  {(rp.category or '-'):7s} {color:11s} vis={n_vis}/17 occ={n_occ}/17  {img_name}")
+    print(f"[GEN-PHOBOS] TIME | Setup: {dt_setup:.3f}s | ViewLayer: {dt_viewlayer:.3f}s | Render: {dt_render:.3f}s | Post: {dt_post:.3f}s | Total: {dt_total:.3f}s")
 
 # ---------------------------------------------------------------------------
 # Salva JSONs (flush final — garante o último checkpoint parcial)
