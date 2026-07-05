@@ -10,6 +10,18 @@ projeta 3D→2D → calcula visibilidade/bbox → grava anotação COCO.
   `cd dataset_generator/blender && blender --background nao_blender.blend --python dataset_generator_phobos.py`
   - Flags (após `--`): `--start N` (índice inicial), `--num N` (quantas amostras),
     `--out DIR` (redireciona a saída — **use sempre em testes**; nunca escreva no `output/` real).
+  - Multi-máquina: `--rank R --world-size W [--total N]` deriva `--start`/`--num` de uma
+    fatia disjunta do job (via `nao_coco_pose.sharding.shard_range`). Tem precedência sobre
+    `--start`/`--num`. Como a semente é `seed + start`, fatias disjuntas → poses e nomes
+    de arquivo disjuntos automaticamente.
+- Juntar datasets de várias máquinas (fora do Blender, sem deps além da stdlib):
+  `python scripts/merge_datasets.py runA.zip runB/output --out output_merged`
+  - Aceita `.zip` (baixados do Kaggle) ou pastas `output/`. Renumera `image_id`/`ann_id`
+    do COCO e usa `file_name` como chave; **aborta** se dois `--start` se sobrepuseram.
+- Monitorar GPU + progresso (roda DENTRO de cada máquina Kaggle; `nvidia-smi` só vê a GPU local):
+  `python scripts/monitor.py --out output --total N --world-size W --rank R [--interval S]`
+  - No notebook, `monitor.run_with_monitor(cmd, out_dir, num)` roda o monitor em paralelo
+    com a geração. Sem deps novas — lê `nvidia-smi` e conta PNGs em `<out>/images/**`.
 - Overlay de validação (5 poses, projeta os keypoints sobre o render):
   `blender --background nao_blender.blend --python overlay_phobos.py`
 - Validar JSON gerado:

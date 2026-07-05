@@ -32,6 +32,7 @@ from nao_texture             import NaoTextureRandomizer
 from blender_camera           import build_K, cam_to_world as get_c2w, BLENDER_AXIS_REMAP
 from blender_scene_randomizer import SceneRandomizer
 from nao_coco_pose.config        import load_dataset, load_randomization, make_rng
+from nao_coco_pose.sharding       import shard_range
 from nao_coco_pose.randomization import DomainRandomizer
 from nao_coco_pose.coco_writer   import CocoDatasetBuilder
 from nao_coco_pose.visibility    import bbox_from_keypoints, V_ABSENT, V_OCCLUDED, V_VISIBLE, in_frame
@@ -52,6 +53,18 @@ _parser.add_argument("--out",   type=str, default=None,
 _parser.add_argument("--save-every", type=int, default=1,
                      help="Grava os JSONs de anotação a cada N amostras (checkpoint). "
                           "<=0 desativa e grava só no fim.")
+_parser.add_argument("--resume", action="store_true",
+                     help="Pula amostras cujo PNG já existe no disco (retomar geração "
+                          "interrompida). Reaproveita as já feitas e continua de onde parou. "
+                          "Requer os MESMOS --start/--num/--total da rodada original.")
+# Orquestração multi-máquina: derivam --start/--num automaticamente a partir da
+# posição desta máquina no job. Ver nao_coco_pose.sharding.shard_range.
+_parser.add_argument("--rank",       type=int, default=None,
+                     help="Índice desta máquina em [0, world-size). Requer --world-size.")
+_parser.add_argument("--world-size", type=int, default=None,
+                     help="Número total de máquinas do job.")
+_parser.add_argument("--total",      type=int, default=None,
+                     help="Total de amostras do job inteiro (default: num_samples do YAML).")
 _args = _parser.parse_args(_argv)
 
 # ---------------------------------------------------------------------------
@@ -60,8 +73,20 @@ _args = _parser.parse_args(_argv)
 dcfg = load_dataset(CFG_DIR / "dataset.yaml")
 rcfg = load_randomization(CFG_DIR / "randomization.yaml")
 
-START_INDEX = _args.start
-NUM_SAMPLES = _args.num if _args.num is not None else dcfg.num_samples
+# Modo orquestrado: --rank + --world-size derivam start/num de uma fatia disjunta
+# do job. Tem precedência sobre --start/--num (que ficam para uso manual/testes).
+if _args.rank is not None or _args.world_size is not None:
+    if _args.rank is None or _args.world_size is None:
+        sys.exit("[GEN-PHOBOS] --rank e --world-size devem ser usados juntos.")
+    _total = _args.total if _args.total is not None else dcfg.num_samples
+    _shard = shard_range(_total, _args.world_size, _args.rank)
+    START_INDEX = _shard.start
+    NUM_SAMPLES = _shard.num
+    print(f"[GEN-PHOBOS] shard rank={_shard.rank}/{_shard.world_size} "
+          f"total={_total} -> start={START_INDEX} num={NUM_SAMPLES}")
+else:
+    START_INDEX = _args.start
+    NUM_SAMPLES = _args.num if _args.num is not None else dcfg.num_samples
 SAVE_EVERY  = _args.save_every
 
 rng  = make_rng(dcfg.seed + START_INDEX)
@@ -281,6 +306,13 @@ for i in range(NUM_SAMPLES):
     img_name = f"{dcfg.image_prefix}{frame_idx:05d}.{dcfg.image_format}"
     img_path = img_dir / img_name
     ann_name = f"{split}/{img_name}"
+
+    # Retomada: se o PNG já existe (rodada anterior), pula sem re-renderizar nem
+    # re-anotar. A anotação, se houver, já veio de load_existing(); imagens sem
+    # anotação (area<1) ficam como órfãs inofensivas. Não consome o RNG — os
+    # frames restantes recebem poses válidas (só não idênticas a um run do zero).
+    if _args.resume and img_path.exists():
+        continue
 
     rp = rand.sample_robot_pose()
     poser.apply_pose(rp.joints)
