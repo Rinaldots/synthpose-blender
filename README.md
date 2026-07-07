@@ -9,6 +9,10 @@
 
 O pipeline aplica poses aleatórias no armature do NAO, posiciona câmera e iluminação, renderiza com Cycles, projeta os keypoints 3D→2D, calcula visibilidade via ray cast e salva anotações COCO. Todo o processo roda headless, sem interface gráfica.
 
+> Dataset com 20 mil imagens:
+
+![kaggle](https://www.kaggle.com/datasets/rinaldotavares/nao-robot-syntetic-20k)
+
 ## Início rápido
 
 ```bash
