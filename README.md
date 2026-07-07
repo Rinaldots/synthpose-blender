@@ -11,7 +11,7 @@ O pipeline aplica poses aleatórias no armature do NAO, posiciona câmera e ilum
 
 > Dataset com 20 mil imagens:
 
-![kaggle](https://www.kaggle.com/datasets/rinaldotavares/nao-robot-syntetic-20k)
+https://www.kaggle.com/datasets/rinaldotavares/nao-robot-syntetic-20k
 
 ## Início rápido
 
