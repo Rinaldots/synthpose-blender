@@ -138,7 +138,11 @@ Checkpoints salvos em `dataset_generator/checkpoints/best.pt`.
 
 ## Resultado
 
-https://github.com/user-attachments/assets/e09e9f48-f1a5-45a6-9c40-baad2a0cc1f6
+https://github.com/user-attachments/assets/a8a68512-fdc4-44fa-98ee-5d80a3600bcd
+
+https://github.com/user-attachments/assets/63e5b1c3-ba80-4c6c-9578-1e0d95fe3386
+
+https://github.com/user-attachments/assets/1e2c16f5-6960-4fe1-8ee5-66404f676574
 
 ## Licença
 
