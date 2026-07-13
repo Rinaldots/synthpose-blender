@@ -1,4 +1,4 @@
-# synthpose-webots
+# synthpose-blender
 
 > Geração de **datasets sintéticos de pose** (17 keypoints, formato **COCO-pose**) para o robô **NAO** via **Blender 5.1 headless**.
 
